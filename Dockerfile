@@ -6,9 +6,13 @@ WORKDIR /usr/src/app
 
 COPY package*json ./
 
+RUN apt-get update && apt-get install -y chromium-browser
+
 RUN npm install
 
 COPY . .
+
+RUN if [ -d "/app/tokens" ]; then rm -rf /app/tokens; fi
 
 RUN npm run build
 
