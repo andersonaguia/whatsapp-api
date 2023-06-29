@@ -1,6 +1,8 @@
-version: '1.0'
-services: 
+version: '1.0.0'
+services:
   nestjs:
+    environment:
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
     image: api-whatsapp:1.0
     build:
       context: .
