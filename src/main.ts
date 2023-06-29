@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { whatsappConnection } from './connection/connection';
+import { AppModule } from './modules/app/app.module';
+import { whatsappConnection } from './core/connection/connection';
 
 async function bootstrap() {  
   await whatsappConnection();
