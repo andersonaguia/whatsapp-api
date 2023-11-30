@@ -1,7 +1,7 @@
 const venom = require('venom-bot');
 
 let clientData = '';
-let qrCode = '';
+let qrCode = null;
 
 export async function whatsappConnection() {
   await venom
@@ -12,7 +12,7 @@ export async function whatsappConnection() {
       (base64Qrimg, asciiQR, attempts, urlCode) => {
         console.log('Number of attempts to read the qrcode: ', attempts);
         console.log('Terminal qrcode: ', asciiQR);
-        qrCode = asciiQR;
+        qrCode = base64Qrimg;
         console.log('base64 image string qrcode: ', base64Qrimg);
         console.log('urlCode (data-ref): ', urlCode);
       },
@@ -29,4 +29,8 @@ export async function whatsappConnection() {
 
 export function getClient() {
   return clientData;
+}
+
+export function getQrCode() {
+  return qrCode;
 }
