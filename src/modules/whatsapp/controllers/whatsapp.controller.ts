@@ -1,39 +1,57 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { CreateWhatsappDto } from '../dto/create-whatsapp.dto';
-import { UpdateWhatsappDto } from '../dto/update-whatsapp.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { WhatsappService } from '../services/whatsapp.service';
+import { NewMessageDto } from '../dto/new-message.dto.ts';
+import { sessionData } from 'src/modules/whatsapp/interfaces/session-data.interface';
 
 @Controller('whatsapp')
 export class WhatsappController {
   constructor(private readonly whatsappService: WhatsappService) {}
 
-  @Post()
-  create(@Body() createWhatsappDto: CreateWhatsappDto) {
-    return this.whatsappService.create(createWhatsappDto);
+  @Get('connect')
+  connect(): any {
+    return this.whatsappService.connect();
+  }
+
+  @Get('findconnectiondata')
+  findConnectionData(): sessionData {
+    return this.whatsappService.findConnectionData();
+  }
+
+  @Get('findallchats')
+  async findAllChats() {
+    return await this.whatsappService.findAllChats();
+  }
+
+  @Get('findallchatsgroups')
+  async findAllChatsGroups() {
+    return await this.whatsappService.findAllChatsGroups();
+  }
+
+  @Get('findallcontacts')
+  async findAllContacts() {
+    return await this.whatsappService.findAllContacts();
+  }
+
+  @Get('findchatbyname')
+  async findChatByName() {
+    return await this.whatsappService.findGroupContactByName('Alarmes');
   }
 
   @Post('sendmessage')
-  sendMessage(@Body() sendMessageDto: CreateWhatsappDto) {
-    return this.whatsappService.create(sendMessageDto);
+  async sendMessage(@Body() data: NewMessageDto) {
+    return await this.whatsappService.sendMessage(data);
   }
 
-  @Get()
-  findAll() {
-    return this.whatsappService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.whatsappService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateWhatsappDto: UpdateWhatsappDto) {
-    return this.whatsappService.update(+id, updateWhatsappDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.whatsappService.remove(+id);
+  @Post('logout')
+  async logout() {
+    return await this.whatsappService.logout();
   }
 }
