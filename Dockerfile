@@ -1,4 +1,4 @@
-FROM node:18-alpine AS build
+FROM node:18-alpine3.18 AS build
 
 LABEL maintainer="Anderson Aguiar"
 
@@ -6,7 +6,7 @@ WORKDIR /usr/src/app
 
 COPY package*json ./
 
-RUN apt-get update && apt-get install -y chromium-browser
+RUN apk update && apk add chromium
 
 RUN npm install
 
