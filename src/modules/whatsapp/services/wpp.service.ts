@@ -16,7 +16,7 @@ let connData: sessionData = {
   asciiQR: '',
   urlCode: '',
 };
-//+5583981020838
+
 let clientData = '';
 
 @Injectable()

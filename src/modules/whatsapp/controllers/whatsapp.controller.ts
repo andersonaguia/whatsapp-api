@@ -3,9 +3,7 @@ import {
   Get,
   Post,
   Body,
-  Patch,
-  Param,
-  Delete,
+  Query,
 } from '@nestjs/common';
 import { WhatsappService } from '../services/whatsapp.service';
 import { NewMessageDto } from '../dto/new-message.dto.ts';
@@ -41,13 +39,14 @@ export class WhatsappController {
   }
 
   @Get('findchatbyname')
-  async findChatByName() {
-    return await this.whatsappService.findGroupContactByName('Alarmes');
+  async findChatByName(@Query('chatName') chatName: string) {
+    return await this.whatsappService.findGroupContactByName(chatName);
   }
 
   @Post('sendmessage')
   async sendMessage(@Body() data: NewMessageDto) {
-    return await this.whatsappService.sendMessage(data);
+    const result = await this.whatsappService.sendMessage(data);
+    return result;
   }
 
   @Post('logout')
