@@ -6,22 +6,29 @@ import { NewMessageDto } from '../dto/new-message.dto.ts.js';
 export class WhatsappService {
   constructor(private readonly wppService: WppService) {}
 
-  connect(): string {
-    this.wppService.whatsappConnection();
-    return 'checking connection status';
+  connect(): object {
+    this.wppService.connect();
+    return {
+      code: 200,
+      message:
+        'Verifique o status da conexão e escaneie o QRCode assim que disponível',
+      headers: {
+        location: 'http://localhost:3003/whatsapp/findconnectiondata',
+      },
+    };
   }
 
   findConnectionData(): sessionData {
     return this.wppService.getSessionData();
   }
 
-  logout() {
+  restartConnection() {
     return new Promise(async (resolve, reject) => {
       try {
         const client = this.wppService.getClientData();
         if (client) {
-          const result = await this.wppService.logout(client);
-          resolve({ code: 200, message: 'Logout realizado com sucesso!' });
+          const res = await this.wppService.restartService(client);
+          resolve(res);
         }
         resolve({ code: 404, message: 'Cliente não está logado.' });
       } catch (error) {
@@ -136,15 +143,16 @@ export class WhatsappService {
     return new Promise(async (resolve, reject) => {
       try {
         const client = this.wppService.getClientData();
-        if (client) {
-          const result = await this.wppService.sendMessage(data, client);
-          if (result.erro) {
-            resolve({ code: 202, message: result.text });
-          }
-          resolve({ code: 201, message: result.status.messageSendResult });
+        const result = await this.wppService.sendMessage(data, client);
+        resolve(result);
+        if (result.erro) {
+          resolve({ code: 202, message: result.text });
         }
+        resolve({ code: 201, message: result.status.messageSendResult });
+
         resolve({ code: 401, message: 'Cliente não está logado.' });
       } catch (error) {
+        console.log('SERVICE ERRO: ', error);
         reject(error);
       }
     });
