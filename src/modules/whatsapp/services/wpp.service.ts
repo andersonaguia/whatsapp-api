@@ -1,12 +1,13 @@
 const venom = require('venom-bot');
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { sessionData } from '../interfaces/session-data.interface';
 import { NewMessageDto } from '../dto/new-message.dto.ts';
 import { MessageSuccessResultDto } from '../dto/message-success-result.dto';
 import { MessageErrorResultDto } from '../dto/message-error-result.dto';
+import { Cron } from '@nestjs/schedule';
 
 let connData: sessionData = {
   attempts: 0,
@@ -20,53 +21,89 @@ let connData: sessionData = {
 let clientData = '';
 
 @Injectable()
-export class WppService {
+export class WppService implements OnModuleInit {
   constructor() {}
 
-  whatsappConnection() {
-    try {
-      venom
-        .create(
-          {
-            session: 'ubuntu-server',
-          },
-          (base64Qrimg, asciiQR, attempts, urlCode) => {
-            console.log('Number of attempts to read the qrcode: ', attempts);
-            connData.attempts = attempts;
-            //console.log('Terminal qrcode: ', asciiQR);
-            connData.asciiQR = asciiQR;
-            //console.log('base64 image string qrcode: ', base64Qrimg);
-            connData.base64Qrimg = base64Qrimg;
-            //console.log('urlCode (data-ref): ', urlCode);
-            connData.urlCode = urlCode;
-          },
-          (statusSession, session) => {
-            console.log('Status Session: ', statusSession);
-            console.log('Session: ', session);
-
-            if (statusSession == 'initWhatsapp') {
-              connData.statusMessage = 'Iniciando whatsapp...';
-            } else if (statusSession == 'isLoggedn') {
-              connData.statusMessage = 'Realizando login...';
-            } else if (statusSession == 'waitForLogin') {
-              connData.statusMessage = 'Logando...';
-            } else if (statusSession == 'waitChat') {
-              connData.statusMessage = 'Carregando mensagens';
-            } else if (statusSession == 'successChat') {
-              connData.statusMessage = 'Conectado';
-            }
-          },
-        )
-        .then((client) => (clientData = client));
-    } catch (error) {
-      console.log('Falha na conexão com o whatsapp: ', error);
-      //no caso de não logado cai no catch. Tratar solução apagando a pasta tokens
-      //this.deleteTokensFolder();
-    }
+  async onModuleInit() {
+    //await this.connect();
+    console.log(process.env.CELL_NUMBER);
   }
 
-  async logout(client) {
-    await client.logout();
+  async connect() {
+    const client = await venom.create(
+      {
+        session: 'ubuntu-server',
+      },
+      (base64Qrimg, asciiQR, attempts, urlCode) => {
+        console.log('Number of attempts to read the qrcode: ', attempts);
+        connData.attempts = attempts;
+        connData.asciiQR = asciiQR;
+        connData.base64Qrimg = base64Qrimg;
+        connData.urlCode = urlCode;
+      },
+      (statusSession, session) => {
+        console.log('Status Session: ', statusSession);
+        console.log('Session: ', session);
+        connData.statusMessage = statusSession;
+      },
+      // BrowserInstance
+      (browser, waPage) => {
+        console.log('Browser PID:', browser.process().pid);
+        waPage.screenshot({ path: 'screenshot.png' });
+      },
+    );
+
+    clientData = client;
+
+    let time = 0;
+    client.onStreamChange((state) => {
+      console.log('State Connection Stream: ' + state);
+      clearTimeout(time);
+      if (state === 'DISCONNECTED' || state === 'SYNCING') {
+        setTimeout(() => {
+          client.close();
+          console.log('Cliente Desconectado');
+        }, 5000);
+      }
+    });
+
+    client
+      .onStateChange((state) => {
+        console.log('State changed: ', state);
+        // force whatsapp take over
+        if ('CONFLICT'.includes(state)) client.useHere();
+        // detect disconnect on whatsapp
+        if ('UNPAIRED'.includes(state)) console.log('logout');
+      })
+      .catch((error) => {
+        console.log('Erro ao fazer login');
+      });
+
+    client.onMessage((data) => {
+      //console.log(data);
+      if (data.isGroupMessage || data.from.includes('@g.us')) {
+        console.log('Mensagem oriunda de grupos');
+        return;
+      } else if (data.chatId.includes('newsletter')) {
+        console.log('Mensagem oriunda de newsletter');
+        return;
+      } else {
+        const received = {
+          name: data.notifyName,
+          number: data.from,
+          message: data.content,
+          responseMessage: data.notifyName
+            ? `Olá ${data.notifyName}, como posso ajudar?`
+            : `Olá, como posso ajudar?`,
+        };
+        //this.autoResponse(client, number, message);
+        console.log(received);
+        return;
+      }
+    });
+  }
+
+  clearData() {
     this.deleteTokensFolder();
     clientData = '';
     connData.attempts = 0;
@@ -75,6 +112,38 @@ export class WppService {
     connData.base64Qrimg = '';
     connData.asciiQR = '';
     connData.urlCode = '';
+  }
+
+  async checkConnected(client) {
+    const isConnected = await client.isConnected();
+    return isConnected;
+  }
+
+  async getConnectionState(client) {
+    const connectionState = await client.getConnectionState();
+    return connectionState;
+  }
+
+  async restartService(client) {
+    try {
+      const unlogged = await client.close(client);
+      this.clearData();
+
+      if (unlogged) {
+        this.connect();
+        return {
+          code: 200,
+          message: 'Reiniciando o whatsapp. Favor escanear o QRCode',
+        };
+      }
+
+      return {
+        code: 200,
+        message: 'Ocorreu um erro ao tentar deslogar, tente novamente!',
+      };
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   start(client) {
@@ -125,11 +194,15 @@ export class WppService {
     return { code: 404, message: 'Nenhum chat encontrado' };
   }
 
-  sendMessage(data: NewMessageDto, client: any) : Promise<MessageSuccessResultDto | MessageErrorResultDto> {
+  autoResponse(
+    client: any,
+    number: string,
+    message: string,
+  ): Promise<MessageSuccessResultDto | MessageErrorResultDto> {
     return new Promise(async (resolve, reject) => {
       try {
         await client
-          .sendText(data.number, `${data.message}`)
+          .sendText(number, `${message}`)
           .then((result) => {
             resolve(result);
           })
@@ -138,6 +211,21 @@ export class WppService {
           });
       } catch (error) {
         console.log('ERRO: ', error);
+        reject(error);
+      }
+    });
+  }
+
+  sendMessage(
+    data: NewMessageDto,
+    client: any,
+  ): Promise<MessageSuccessResultDto | MessageErrorResultDto> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const result = await client.sendText(data.number, `${data.message}`);
+        resolve(result);
+      } catch (error) {
+        console.log('ERRO SEND MESSAGE: ', error);
         reject(error);
       }
     });
@@ -166,6 +254,17 @@ export class WppService {
       console.log('Pasta "tokens" excluída com sucesso.');
     } catch (error) {
       console.error('Erro ao excluir a pasta "tokens":', error);
+    }
+  }
+
+  @Cron('0 */30 0-23 * * *')
+  handleCron() {
+    let content = new NewMessageDto();
+    content.number = process.env.CELL_NUMBER;
+    content.message = '✅ *Im alive!';
+
+    if (connData.statusMessage == 'successChat') {
+      this.sendMessage(content, clientData);
     }
   }
 }

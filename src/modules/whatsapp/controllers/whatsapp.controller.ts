@@ -51,6 +51,6 @@ export class WhatsappController {
 
   @Post('logout')
   async logout() {
-    return await this.whatsappService.logout();
+    return await this.whatsappService.restartConnection();
   }
 }
