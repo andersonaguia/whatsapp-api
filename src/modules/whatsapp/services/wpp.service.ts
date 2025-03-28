@@ -33,13 +33,25 @@ export class WppService implements OnModuleInit {
     const client = await venom.create(
       {
         session: 'ubuntu-server',
+        headless: 'new',
+        //headless: false,
+        browserArgs: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--disable-software-rasterizer',
+        ],
       },
       (base64Qrimg, asciiQR, attempts, urlCode) => {
-        console.log('Number of attempts to read the qrcode: ', attempts);
         connData.attempts = attempts;
         connData.asciiQR = asciiQR;
         connData.base64Qrimg = base64Qrimg;
         connData.urlCode = urlCode;
+        // console.log('Number of attempts to read the qrcode: ', attempts);
+        // console.log('Terminal qrcode: ', asciiQR);
+        // console.log('base64 image string qrcode: ', base64Qrimg);
+        // console.log('urlCode (data-ref): ', urlCode);
       },
       (statusSession, session) => {
         console.log('Status Session: ', statusSession);
@@ -78,7 +90,7 @@ export class WppService implements OnModuleInit {
       .catch((error) => {
         console.log('Erro ao fazer login');
       });
-
+    /*
     client.onMessage((data) => {
       //console.log(data);
       if (data.isGroupMessage || data.from.includes('@g.us')) {
@@ -101,6 +113,7 @@ export class WppService implements OnModuleInit {
         return;
       }
     });
+    */
   }
 
   clearData() {
@@ -126,20 +139,19 @@ export class WppService implements OnModuleInit {
 
   async restartService(client) {
     try {
-      const unlogged = await client.close(client);
+      const unlogged = await client.logout(client);
       this.clearData();
 
       if (unlogged) {
-        this.connect();
         return {
           code: 200,
-          message: 'Reiniciando o whatsapp. Favor escanear o QRCode',
+          message: 'Desconectado, favor realizar a conexão novamente!',
         };
       }
 
       return {
         code: 200,
-        message: 'Ocorreu um erro ao tentar deslogar, tente novamente!',
+        message: 'Ocorreu um erro ao tentar fazer logout, tente novamente!',
       };
     } catch (error) {
       console.log(error);
@@ -223,6 +235,7 @@ export class WppService implements OnModuleInit {
     return new Promise(async (resolve, reject) => {
       try {
         const result = await client.sendText(data.number, `${data.message}`);
+        //console.log(result);
         resolve(result);
       } catch (error) {
         console.log('ERRO SEND MESSAGE: ', error);
@@ -261,7 +274,7 @@ export class WppService implements OnModuleInit {
   handleCron() {
     let content = new NewMessageDto();
     content.number = process.env.CELL_NUMBER;
-    content.message = '✅ *Im alive!';
+    content.message = '✅ Im alive!';
 
     if (connData.statusMessage == 'successChat') {
       this.sendMessage(content, clientData);
