@@ -144,7 +144,7 @@ export class WhatsappService {
       try {
         const client = this.wppService.getClientData();
         const result = await this.wppService.sendMessage(data, client);
-        resolve(result);
+        
         if (result.erro) {
           resolve({ code: 202, message: result.text });
         }
