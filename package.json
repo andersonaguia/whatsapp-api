@@ -29,7 +29,7 @@
     "fs-extra": "^11.2.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.2.0",
-    "venom-bot": "^5.0.6"
+    "venom-bot": "^5.3.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.0.0",
