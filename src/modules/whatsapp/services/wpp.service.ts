@@ -1,6 +1,10 @@
 const venom = require('venom-bot');
 
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { sessionData } from '../interfaces/session-data.interface';
@@ -33,8 +37,8 @@ export class WppService implements OnModuleInit {
     const client = await venom.create(
       {
         session: 'ubuntu-server',
-        headless: 'new',
-        //headless: false,
+        //headless: 'new',
+        headless: false,
         browserArgs: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
@@ -82,9 +86,7 @@ export class WppService implements OnModuleInit {
     client
       .onStateChange((state) => {
         console.log('State changed: ', state);
-        // force whatsapp take over
         if ('CONFLICT'.includes(state)) client.useHere();
-        // detect disconnect on whatsapp
         if ('UNPAIRED'.includes(state)) console.log('logout');
       })
       .catch((error) => {
@@ -117,7 +119,7 @@ export class WppService implements OnModuleInit {
   }
 
   clearData() {
-    this.deleteTokensFolder();
+    // this.deleteTokensFolder();
     clientData = '';
     connData.attempts = 0;
     connData.name = '';
@@ -139,10 +141,14 @@ export class WppService implements OnModuleInit {
 
   async restartService(client) {
     try {
-      const unlogged = await client.logout(client);
+      const unlogged = await client.close();
       this.clearData();
 
       if (unlogged) {
+        connData.attempts = 0;
+        connData.asciiQR = '';
+        connData.base64Qrimg = '';
+        connData.urlCode = '';
         return {
           code: 200,
           message: 'Desconectado, favor realizar a conexão novamente!',
@@ -170,6 +176,11 @@ export class WppService implements OnModuleInit {
             console.error('Error when sending: ', erro); //return object error
           });
       }
+    });
+
+    client.onIncomingCall(async (call) => {
+      console.log(call);
+      client.sendText(call.peerJid, 'Desculpe, não posso receber chamadas!');
     });
   }
 
@@ -234,9 +245,18 @@ export class WppService implements OnModuleInit {
   ): Promise<MessageSuccessResultDto | MessageErrorResultDto> {
     return new Promise(async (resolve, reject) => {
       try {
-        const result = await client.sendText(data.number, `${data.message}`);
-        //console.log(result);
-        resolve(result);
+        console.log("STATE: ", await client.getConnectionState());
+
+        if (connData.statusMessage == 'successChat') {
+          const result = await client.sendText(data.number, `${data.message}`);
+          //console.log(result);
+          resolve(result);
+        } else {
+          throw new UnauthorizedException({
+            code: 401,
+            message: 'Sessão expirada, favor conectar novamente!',
+          });
+        }
       } catch (error) {
         console.log('ERRO SEND MESSAGE: ', error);
         reject(error);
@@ -263,6 +283,7 @@ export class WppService implements OnModuleInit {
     const folderPath = path.join(projectRoot, 'tokens'); 
   */
     try {
+      console.log('\n\n*** FOLDER PATH: ', folderPath);
       fs.remove(folderPath);
       console.log('Pasta "tokens" excluída com sucesso.');
     } catch (error) {
