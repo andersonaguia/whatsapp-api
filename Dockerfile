@@ -4,9 +4,25 @@ LABEL maintainer="Anderson Aguiar"
 
 WORKDIR /usr/src/app
 
-COPY package*json ./
+COPY package*.json ./
 
-RUN apk update && apk add chromium
+# 🟢 Instalar dependências necessárias pro Chromium do Puppeteer
+RUN apk update && apk add --no-cache \
+  udev \
+  ttf-freefont \
+  nss \
+  freetype \
+  harfbuzz \
+  ca-certificates \
+  chromium \
+  libx11 \
+  libxcomposite \
+  libxdamage \
+  libxrandr \
+  gtk+3.0 \
+  alsa-lib
+
+RUN npm install
 
 RUN npm install
 
@@ -19,3 +35,4 @@ RUN npm run build
 EXPOSE 3003
 
 CMD ["node", "dist/main.js"]
+
