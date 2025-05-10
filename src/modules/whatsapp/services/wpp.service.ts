@@ -86,7 +86,7 @@ export class WppService implements OnModuleInit {
           } catch (error) {
             console.error('❌ Erro ao tentar reconectar:', error);
           }
-        }, 5000);
+        }, 60000);
       }
     });
     
