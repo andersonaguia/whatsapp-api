@@ -24,8 +24,6 @@ RUN apk update && apk add --no-cache \
 
 RUN npm install
 
-RUN npm install
-
 COPY . .
 
 RUN if [ -d "/app/tokens" ]; then rm -rf /app/tokens; fi
