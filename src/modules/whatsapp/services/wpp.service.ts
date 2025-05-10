@@ -29,8 +29,7 @@ export class WppService implements OnModuleInit {
   constructor() {}
 
   async onModuleInit() {
-    //await this.connect();
-    console.log(process.env.CELL_NUMBER);
+    await this.connect();
   }
 
   async connect() {
@@ -49,39 +48,48 @@ export class WppService implements OnModuleInit {
       },
       (base64Qrimg, asciiQR, attempts, urlCode) => {
         connData.attempts = attempts;
-        connData.asciiQR = asciiQR;
-        connData.base64Qrimg = base64Qrimg;
+        //connData.asciiQR = asciiQR;
         connData.urlCode = urlCode;
+        connData.base64Qrimg = base64Qrimg;        
         // console.log('Number of attempts to read the qrcode: ', attempts);
         // console.log('Terminal qrcode: ', asciiQR);
         // console.log('base64 image string qrcode: ', base64Qrimg);
         // console.log('urlCode (data-ref): ', urlCode);
       },
       (statusSession, session) => {
-        console.log('Status Session: ', statusSession);
-        console.log('Session: ', session);
+        //console.log('Status Session: ', statusSession);
+        //console.log('Session: ', session);
         connData.statusMessage = statusSession;
       },
       // BrowserInstance
       (browser, waPage) => {
-        console.log('Browser PID:', browser.process().pid);
+        //console.log('Browser PID:', browser.process().pid);
         waPage.screenshot({ path: 'screenshot.png' });
       },
     );
 
     clientData = client;
 
-    let time = 0;
+    let timeoutId: NodeJS.Timeout | null = null;
+
     client.onStreamChange((state) => {
-      console.log('State Connection Stream: ' + state);
-      clearTimeout(time);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+    
       if (state === 'DISCONNECTED' || state === 'SYNCING') {
-        setTimeout(() => {
-          client.close();
-          console.log('Cliente Desconectado');
+        timeoutId = setTimeout(async () => {
+          try {
+            await client.close();
+            await this.connect(); 
+          } catch (error) {
+            console.error('❌ Erro ao tentar reconectar:', error);
+          }
         }, 5000);
       }
     });
+    
 
     client
       .onStateChange((state) => {
@@ -119,7 +127,6 @@ export class WppService implements OnModuleInit {
   }
 
   clearData() {
-    // this.deleteTokensFolder();
     clientData = '';
     connData.attempts = 0;
     connData.name = '';
@@ -245,7 +252,7 @@ export class WppService implements OnModuleInit {
   ): Promise<MessageSuccessResultDto | MessageErrorResultDto> {
     return new Promise(async (resolve, reject) => {
       try {
-        console.log("STATE: ", await client.getConnectionState());
+        console.log('STATE: ', await client.getConnectionState());
 
         if (connData.statusMessage == 'successChat') {
           const result = await client.sendText(data.number, `${data.message}`);
@@ -297,8 +304,6 @@ export class WppService implements OnModuleInit {
     content.number = process.env.CELL_NUMBER;
     content.message = '✅ Im alive!';
 
-    if (connData.statusMessage == 'successChat') {
-      this.sendMessage(content, clientData);
-    }
+    this.sendMessage(content, clientData);
   }
 }

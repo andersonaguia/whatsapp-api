@@ -92,7 +92,6 @@ export class WhatsappService {
                 }
               }
             });
-            console.log(typeof groupContact);
             resolve(groupContact);
           }
           resolve({ code: 404, message: 'Nenhum chat de gurupo encontrado' });
