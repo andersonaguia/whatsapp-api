@@ -1,0 +1,54 @@
+name: Deploy backend to server
+
+on:
+  push:
+    branches:
+      - main  
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Ubuntu server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}  
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "✅ Conexão SSH estabelecida"
+
+            echo "🔐 Adicionando chave SSH do GitHub ao known_hosts..."
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+            cd ~/Projects/Backend
+            
+            if [ -d "whatsapp-api/.git" ]; then
+              echo "🔄 Atualizando repositório existente (git pull)..."
+              cd whatsapp-api
+              git pull
+            else
+              echo "🛠️ Clonando repositório..."
+              git clone git@github.com:andersonaguia/whatsapp-api.git
+              echo "✅ Clone concluído!"
+            fi
+            echo "✅ Repositório sincronizado!"
+
+            echo "🛠️ Exportando variáveis de ambiente..."
+            export CELL_NUMBER=${{ secrets.CELL_NUMBER }}
+
+            echo "🛑 Derrubando container antigo..."
+            docker compose down
+
+            echo "🚀 Subindo novo container com build atualizado..."
+            CELL_NUMBER=$CELL_NUMBER docker compose up -d --build
+
+            echo "✅ Deploy concluído com sucesso!"
+
+
+
+
+
+          
+            

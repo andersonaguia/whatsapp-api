@@ -152,8 +152,24 @@ export class WhatsappService {
 
         resolve({ code: 401, message: 'Cliente não está logado.' });
       } catch (error) {
-        console.log('SERVICE ERRO: ', error);
-        reject(error);
+        try {
+          await this.wppService.connect();
+
+          await new Promise(res => setTimeout(res, 10000));
+  
+          const client = this.wppService.getClientData();
+          const retryResult = await this.wppService.sendMessage(data, client);
+  
+          if (retryResult.erro) {
+            return resolve({ code: 202, message: retryResult.text });
+          }
+  
+          return resolve({ code: 201, message: retryResult.status.messageSendResult });
+  
+        } catch (retryError) {
+          console.log('❌ Erro ao tentar reconectar e reenviar:', retryError);
+          return reject(retryError);
+        }
       }
     });
   }

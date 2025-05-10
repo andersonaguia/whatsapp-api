@@ -1,9 +1,10 @@
-version: '1.0.0'
+version: '1.0.1'
+
 services:
   nestjs:
+    container_name: whatsapp_api 
     environment:
-      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
-    image: api-whatsapp:1.0
+      - CELL_NUMBER
     build:
       context: .
       dockerfile: Dockerfile
