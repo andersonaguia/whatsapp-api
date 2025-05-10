@@ -16,6 +16,7 @@ jobs:
           port: ${{ secrets.SERVER_PORT }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          timeout: 1800
           script: |
             echo "✅ Conexão SSH estabelecida"
 
