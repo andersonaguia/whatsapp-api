@@ -36,8 +36,8 @@ export class WppService implements OnModuleInit {
     const client = await venom.create(
       {
         session: 'ubuntu-server',
-        //headless: 'new',
-        headless: false,
+        headless: 'new',
+        //headless: false, //ativar apenas durante desenvolvimento
         browserArgs: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
