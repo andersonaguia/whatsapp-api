@@ -1,10 +1,10 @@
-FROM node:18-alpine3.18 AS build
+FROM node:22-alpine AS build
 
 LABEL maintainer="Anderson Aguiar"
 
 WORKDIR /usr/src/app
 
-COPY package*.json ./
+COPY package.json package-lock.json ./
 
 # 🟢 Instalar dependências necessárias pro Chromium do Puppeteer
 RUN apk update && apk add --no-cache \
