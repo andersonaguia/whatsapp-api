@@ -2,7 +2,6 @@ const venom = require('venom-bot');
 
 import {
   Injectable,
-  OnApplicationBootstrap,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as fs from 'fs-extra';
@@ -25,12 +24,8 @@ let connData: sessionData = {
 let clientData = '';
 
 @Injectable()
-export class WppService implements OnApplicationBootstrap {
+export class WppService {
   constructor() {}
-
-  async onApplicationBootstrap() {    
-    await this.connect();
-  }
 
   async connect() {
     const client = await venom.create(
