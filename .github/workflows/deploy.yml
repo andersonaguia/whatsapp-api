@@ -27,6 +27,7 @@ jobs:
             if [ -d "whatsapp-api/.git" ]; then
               echo "🔄 Atualizando repositório existente (git pull)..."
               cd whatsapp-api
+              git remote set-url origin git@github.com:andersonaguia/whatsapp-api.git
               git pull
             else
               echo "🛠️ Clonando repositório..."
