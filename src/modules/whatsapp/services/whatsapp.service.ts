@@ -1,10 +1,16 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { sessionData } from 'src/modules/whatsapp/interfaces/session-data.interface.js';
 import { WppService } from './wpp.service.js';
 import { NewMessageDto } from '../dto/new-message.dto.ts.js';
 @Injectable()
-export class WhatsappService {
+export class WhatsappService implements OnApplicationBootstrap {
   constructor(private readonly wppService: WppService) {}
+
+  onApplicationBootstrap() {
+    this.wppService.connect()
+      .then(() => console.log('📲 Conexão automática Venom.'))
+      .catch(err => console.error('❌ Erro conexão automática:', err));
+  }
 
   connect(): object {
     this.wppService.connect();

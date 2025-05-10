@@ -33,6 +33,8 @@ export class WppService {
         session: 'ubuntu-server',
         headless: 'new',
         //headless: false, //ativar apenas durante desenvolvimento
+        disableWelcome: true,
+        updatesLog: false,
         browserArgs: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
